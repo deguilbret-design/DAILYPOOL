@@ -180,11 +180,11 @@ elif menu == "Tableau de bord & Stats":
             
             classement_data.append({
                 "Participant": p,
-                "Points Totaux": total_pts,
                 "Buts": total_buts,
                 "Passes": total_passes,
                 "Victoires (Gardiens)": total_victoires,
-                "Blanchissages": total_blanchissages
+                "Blanchissages": total_blanchissages,
+                "Points Totaux": total_pts  # Déplacé complètement à droite
             })
 
         df_classement = pd.DataFrame(classement_data)
