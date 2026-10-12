@@ -31,22 +31,23 @@ def save_data(data):
 
 st.set_page_config(page_title="Pool de Hockey - Journalier", page_icon="🏒", layout="wide")
 
-# --- STYLE CSS AVANCÉ POUR CENTRER TOUT PARFAITEMENT ---
+# --- STYLE CSS RADICAL POUR CENTRER LES TABLEAUX HTML ---
 st.markdown("""
     <style>
-    /* Centrer toutes les cellules, en-têtes et données de tous les tableaux Streamlit */
-    .stDataFrame td, .stDataFrame th, div[data-baseweb="input"] input, [data-testid="stDataEditor"] div, [data-testid="stTable"] td, [data-testid="stTable"] th {
-        text-align: center !important;
-        justify-content: center !important;
+    /* Forcer le centrage absolu pour tous les tableaux HTML générés */
+    table {
+        width: 100% !important;
+        margin: auto !important;
     }
-    th div {
-        display: flex !important;
-        justify-content: center !important;
+    th {
         text-align: center !important;
+        background-color: #f0f2f6 !important;
+        color: #31333F !important;
+        padding: 10px !important;
     }
-    /* Forcer le centrage spécifique des cellules de dataframes et grilles */
-    div[data-testid="stDataFrame"] div[data-baseweb="block"] {
+    td {
         text-align: center !important;
+        padding: 8px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -81,7 +82,6 @@ if st.sidebar.button("🔄 RESET Journalier (Mettre stats à 0)", type="primary"
 if menu == "Gestion des Joueurs / Participants":
     st.header("👥 Gestion des Participants et des Joueurs")
     
-    # 1. Gestion des Participants
     col1, col2 = st.columns(2)
     with col1:
         with st.form("add_participant_form"):
@@ -116,7 +116,6 @@ if menu == "Gestion des Joueurs / Participants":
 
     st.markdown("---")
 
-    # 2. Ajouter un nouveau joueur
     with st.expander("➕ Ajouter un nouveau joueur unique"):
         with st.form("add_player_form"):
             nom_joueur = st.text_input("Nom du joueur (ex: Cale Makar)")
@@ -154,7 +153,6 @@ if menu == "Gestion des Joueurs / Participants":
 
     st.markdown("---")
 
-    # 3. Modifier rapidement les participants d'un joueur existant
     st.subheader("✏️ Modifier les participants d'un joueur existant")
     if data["joueurs"] and data["participants"]:
         joueurs_tries = sorted(data["joueurs"], key=lambda x: x["nom"].lower())
@@ -192,7 +190,6 @@ if menu == "Gestion des Joueurs / Participants":
                 st.success("Joueur supprimé.")
                 st.rerun()
 
-    # Affichage de la liste actuelle globale
     st.subheader("📋 Liste globale des joueurs enregistrés")
     if data["joueurs"]:
         df_show = pd.DataFrame([
@@ -251,7 +248,7 @@ elif menu == "Tableau de bord & Stats":
 
         st.markdown("---")
 
-        # --- CLASSEMENT DES PARTICIPANTS ---
+        # --- CLASSEMENT DES PARTICIPANTS (EN HTML PUR CENTRÉ) ---
         st.header("🏆 Classement Général des Participants")
 
         classement_data = []
@@ -292,19 +289,9 @@ elif menu == "Tableau de bord & Stats":
             df_classement = df_classement.sort_values(by=critere_tri, ascending=is_ascending).reset_index(drop=True)
             df_classement.index = df_classement.index + 1
 
-            # Utilisation de colonnes resserrées pour forcer la largeur normale de Points Totaux
-            st.dataframe(
-                df_classement, 
-                use_container_width=True,
-                column_config={
-                    "Participant": st.column_config.TextColumn("Participant", width="medium"),
-                    "Buts": st.column_config.NumberColumn("Buts", width="small", format="%d"),
-                    "Passes": st.column_config.NumberColumn("Passes", width="small", format="%d"),
-                    "Win": st.column_config.NumberColumn("Win", width="small", format="%d"),
-                    "Blanchissages": st.column_config.NumberColumn("Blanchissages", width="small", format="%d"),
-                    "Points Totaux": st.column_config.NumberColumn("Points Totaux", width="small", format="%d")
-                }
-            )
+            # Affichage via HTML pour garantir le centrage parfait et la largeur propre
+            html_table = df_classement.to_html(classes='table table-striped', index=True)
+            st.markdown(html_table, unsafe_allow_html=True)
         else:
             st.info("Aucun participant dans le classement pour l'instant.")
 
@@ -343,17 +330,8 @@ elif menu == "Alignements par Participant":
             ])
             df_part_show.index = df_part_show.index + 1
             
-            st.dataframe(
-                df_part_show, 
-                use_container_width=True,
-                column_config={
-                    "Position": st.column_config.TextColumn("Position", width="small"),
-                    "Joueur": st.column_config.TextColumn("Joueur", width="medium"),
-                    "Buts": st.column_config.NumberColumn("Buts", width="small", format="%d"),
-                    "Passes": st.column_config.NumberColumn("Passes", width="small", format="%d"),
-                    "Win": st.column_config.NumberColumn("Win", width="small", format="%d"),
-                    "Blanchissages": st.column_config.NumberColumn("Blanchissages", width="small", format="%d")
-                }
-            )
+            # Affichage via HTML pour centrer proprement les alignements aussi
+            html_table_part = df_part_show.to_html(classes='table table-striped', index=True)
+            st.markdown(html_table_part, unsafe_allow_html=True)
         else:
             st.info(f"Aucun joueur n'a encore été associé à {participant_selectionne}.")
