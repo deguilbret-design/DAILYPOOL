@@ -134,24 +134,25 @@ if menu == "Gestion des Joueurs / Participants":
 
     st.markdown("---")
 
-    # 3. Modifier rapidement les participants d'un joueur existant (Pré-coché par défaut)
+    # 3. Modifier rapidement les participants d'un joueur existant (CORRIGÉ ICI)
     st.subheader("✏️ Modifier les participants d'un joueur existant")
     if data["joueurs"] and data["participants"]:
         joueurs_tries = sorted(data["joueurs"], key=lambda x: x["nom"].lower())
         noms_joueurs = [j["nom"] for j in joueurs_tries]
         
-        selected_player_name = st.selectbox("Sélectionne un joueur dans la liste (A-Z)", noms_joueurs)
+        selected_player_name = st.selectbox("Sélectionne un joueur dans la liste (A-Z)", noms_joueurs, key="select_edit_player")
         
         joueur_obj = next(j for j in data["joueurs"] if j["nom"] == selected_player_name)
         
-        with st.form("edit_player_form"):
+        # On utilise une clé unique basée sur le nom du joueur pour forcer le formulaire à se réinitialiser proprement lors du changement de joueur
+        with st.form(f"edit_player_form_{selected_player_name}"):
             st.markdown(f"**Modification pour : {joueur_obj['nom']} ({joueur_obj['position']})**")
-            st.markdown("Les participants qui ont déjà choisi ce joueur sont **déjà cochés**. Ajoute ou retire des sélections selon tes besoins :")
+            st.markdown("Les participants qui ont déjà choisi ce joueur sont **déjà cochés**. Ajoute ou retire des sélections :")
             
             edit_checks = {}
             for p in data["participants"]:
                 deja_present = p in joueur_obj.get("participants", [])
-                edit_checks[p] = st.checkbox(p, value=deja_present, key=f"edit_chk_{p}")
+                edit_checks[p] = st.checkbox(p, value=deja_present, key=f"edit_chk_{selected_player_name}_{p}")
                 
             submit_edit = st.form_submit_button("Mettre à jour les participants")
             
@@ -277,12 +278,10 @@ elif menu == "Alignements par Participant":
     else:
         participant_selectionne = st.selectbox("Sélectionne un participant pour voir son équipe", sorted(data["participants"]))
         
-        # Filtrer les joueurs de ce participant
         joueurs_du_participant = [
             j for j in data["joueurs"] if participant_selectionne in j.get("participants", [])
         ]
         
-        # Tri personnalisé : Attaquants d'abord, puis Défenseurs, puis Gardiens (et ordre alphabétique du nom à l'intérieur)
         ordre_positions = {"Attaquant": 1, "Défenseur": 2, "Gardien": 3}
         
         joueurs_du_participant = sorted(
@@ -303,7 +302,6 @@ elif menu == "Alignements par Participant":
                     "Blanchissages": j.get("blanchissages", 0)
                 } for j in joueurs_du_participant
             ])
-            # Numérotation de 1 à 15 (ou plus)
             df_part_show.index = df_part_show.index + 1
             st.dataframe(df_part_show, use_container_width=True)
         else:
