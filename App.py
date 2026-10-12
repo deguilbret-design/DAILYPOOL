@@ -134,7 +134,7 @@ if menu == "Gestion des Joueurs / Participants":
 
     st.markdown("---")
 
-    # 3. Modifier rapidement les participants d'un joueur existant (CORRIGÉ ICI)
+    # 3. Modifier rapidement les participants d'un joueur existant
     st.subheader("✏️ Modifier les participants d'un joueur existant")
     if data["joueurs"] and data["participants"]:
         joueurs_tries = sorted(data["joueurs"], key=lambda x: x["nom"].lower())
@@ -144,7 +144,6 @@ if menu == "Gestion des Joueurs / Participants":
         
         joueur_obj = next(j for j in data["joueurs"] if j["nom"] == selected_player_name)
         
-        # On utilise une clé unique basée sur le nom du joueur pour forcer le formulaire à se réinitialiser proprement lors du changement de joueur
         with st.form(f"edit_player_form_{selected_player_name}"):
             st.markdown(f"**Modification pour : {joueur_obj['nom']} ({joueur_obj['position']})**")
             st.markdown("Les participants qui ont déjà choisi ce joueur sont **déjà cochés**. Ajoute ou retire des sélections :")
@@ -202,10 +201,19 @@ elif menu == "Tableau de bord & Stats":
         df_saisie = pd.DataFrame(joueurs_tries_stats)
         colonnes_edition = ["nom", "position", "buts", "passes", "victoires", "blanchissages"]
         
+        # Configuration propre du tableau de saisie avec des largeurs adaptées
         edited_df = st.data_editor(
             df_saisie[colonnes_edition],
             num_rows="fixed",
             use_container_width=True,
+            column_config={
+                "nom": st.column_config.TextColumn("Joueur", disabled=True),
+                "position": st.column_config.TextColumn("Position", disabled=True),
+                "buts": st.column_config.NumberColumn("Buts", min_value=0, step=1, format="%d"),
+                "passes": st.column_config.NumberColumn("Passes", min_value=0, step=1, format="%d"),
+                "victoires": st.column_config.NumberColumn("Win", min_value=0, step=1, format="%d"),
+                "blanchissages": st.column_config.NumberColumn("Blanchissages", min_value=0, step=1, format="%d")
+            },
             key="grid_stats"
         )
 
@@ -247,7 +255,7 @@ elif menu == "Tableau de bord & Stats":
                 "Participant": p,
                 "Buts": total_buts,
                 "Passes": total_passes,
-                "Victoires (Gardiens)": total_victoires,
+                "Win": total_victoires,          # Renommé en Win
                 "Blanchissages": total_blanchissages,
                 "Points Totaux": total_pts
             })
@@ -257,7 +265,7 @@ elif menu == "Tableau de bord & Stats":
         if not df_classement.empty:
             col_tri, ascending_order = st.columns(2)
             with col_tri:
-                critere_tri = st.selectbox("Trier le classement par :", ["Points Totaux", "Buts", "Passes", "Victoires (Gardiens)", "Blanchissages", "Participant"], index=0)
+                critere_tri = st.selectbox("Trier le classement par :", ["Points Totaux", "Buts", "Passes", "Win", "Blanchissages", "Participant"], index=0)
             with ascending_order:
                 ordre = st.radio("Ordre de tri", ["Décroissant (Haut en bas)", "Croissant"], index=0)
                 is_ascending = True if ordre == "Croissant" else False
@@ -265,7 +273,19 @@ elif menu == "Tableau de bord & Stats":
             df_classement = df_classement.sort_values(by=critere_tri, ascending=is_ascending).reset_index(drop=True)
             df_classement.index = df_classement.index + 1
 
-            st.dataframe(df_classement, use_container_width=True)
+            # Affichage du classement avec un design épuré, colonnes centrées et largeurs optimisées
+            st.dataframe(
+                df_classement, 
+                use_container_width=True,
+                column_config={
+                    "Participant": st.column_config.TextColumn("Participant", width="medium"),
+                    "Buts": st.column_config.NumberColumn("Buts", width="small", format="%d"),
+                    "Passes": st.column_config.NumberColumn("Passes", width="small", format="%d"),
+                    "Win": st.column_config.NumberColumn("Win", width="small", format="%d"),
+                    "Blanchissages": st.column_config.NumberColumn("Blanchissages", width="small", format="%d"),
+                    "Points Totaux": st.column_config.NumberColumn("Points Totaux", width="medium", format="%d")
+                }
+            )
         else:
             st.info("Aucun participant dans le classement pour l'instant.")
 
@@ -298,11 +318,23 @@ elif menu == "Alignements par Participant":
                     "Joueur": j["nom"],
                     "Buts": j.get("buts", 0),
                     "Passes": j.get("passes", 0),
-                    "Victoires": j.get("victoires", 0),
+                    "Win": j.get("victoires", 0),
                     "Blanchissages": j.get("blanchissages", 0)
                 } for j in joueurs_du_participant
             ])
             df_part_show.index = df_part_show.index + 1
-            st.dataframe(df_part_show, use_container_width=True)
+            
+            st.dataframe(
+                df_part_show, 
+                use_container_width=True,
+                column_config={
+                    "Position": st.column_config.TextColumn("Position", width="small"),
+                    "Joueur": st.column_config.TextColumn("Joueur", width="medium"),
+                    "Buts": st.column_config.NumberColumn("Buts", width="small", format="%d"),
+                    "Passes": st.column_config.NumberColumn("Passes", width="small", format="%d"),
+                    "Win": st.column_config.NumberColumn("Win", width="small", format="%d"),
+                    "Blanchissages": st.column_config.NumberColumn("Blanchissages", width="small", format="%d")
+                }
+            )
         else:
             st.info(f"Aucun joueur n'a encore été associé à {participant_selectionne}.")
