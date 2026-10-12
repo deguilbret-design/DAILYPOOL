@@ -31,6 +31,22 @@ def save_data(data):
 
 st.set_page_config(page_title="Pool de Hockey - Journalier", page_icon="🏒", layout="wide")
 
+# --- STYLE CSS POUR CENTRER TOUTES LES COLONNES (DONNÉES ET EN-TÊTES) ---
+st.markdown("""
+    <style>
+    /* Centrer le texte et les nombres dans les cellules des tableaux et éditeurs */
+    .stDataFrame td, .stDataFrame th, div[data-baseweb="input"] input, [data-testid="stDataEditor"] div {
+        text-align: center !important;
+    }
+    /* Centrer les en-têtes de colonnes des dataframes */
+    th div {
+        display: flex !important;
+        justify-content: center !important;
+        text-align: center !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 data = load_data()
 
 st.title("🏒 Pool de Hockey - Suivi Journalier")
@@ -201,7 +217,6 @@ elif menu == "Tableau de bord & Stats":
         df_saisie = pd.DataFrame(joueurs_tries_stats)
         colonnes_edition = ["nom", "position", "buts", "passes", "victoires", "blanchissages"]
         
-        # Configuration propre du tableau de saisie avec des largeurs adaptées
         edited_df = st.data_editor(
             df_saisie[colonnes_edition],
             num_rows="fixed",
@@ -255,7 +270,7 @@ elif menu == "Tableau de bord & Stats":
                 "Participant": p,
                 "Buts": total_buts,
                 "Passes": total_passes,
-                "Win": total_victoires,          # Renommé en Win
+                "Win": total_victoires,
                 "Blanchissages": total_blanchissages,
                 "Points Totaux": total_pts
             })
@@ -273,7 +288,6 @@ elif menu == "Tableau de bord & Stats":
             df_classement = df_classement.sort_values(by=critere_tri, ascending=is_ascending).reset_index(drop=True)
             df_classement.index = df_classement.index + 1
 
-            # Affichage du classement avec un design épuré, colonnes centrées et largeurs optimisées
             st.dataframe(
                 df_classement, 
                 use_container_width=True,
