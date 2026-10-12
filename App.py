@@ -133,13 +133,11 @@ if menu == "Gestion des Joueurs / Participants":
     # 3. Modifier rapidement les participants d'un joueur existant (Trié par ordre alphabétique)
     st.subheader("✏️ Modifier les participants d'un joueur existant")
     if data["joueurs"] and data["participants"]:
-        # Trier les joueurs par ordre alphabétique
         joueurs_tries = sorted(data["joueurs"], key=lambda x: x["nom"].lower())
         noms_joueurs = [j["nom"] for j in joueurs_tries]
         
         selected_player_name = st.selectbox("Sélectionne un joueur dans la liste (A-Z)", noms_joueurs)
         
-        # Trouver le joueur sélectionné
         joueur_obj = next(j for j in data["joueurs"] if j["nom"] == selected_player_name)
         
         with st.form("edit_player_form"):
@@ -148,7 +146,6 @@ if menu == "Gestion des Joueurs / Participants":
             
             edit_checks = {}
             for p in data["participants"]:
-                # Pré-cocher si le participant a déjà le joueur
                 deja_present = p in joueur_obj["participants"]
                 edit_checks[p] = st.checkbox(p, value=deja_present, key=f"edit_chk_{p}")
                 
@@ -163,7 +160,6 @@ if menu == "Gestion des Joueurs / Participants":
 
         st.markdown("---")
         
-        # Supprimer un joueur de la liste
         with st.expander("🗑️ Supprimer un joueur de la liste"):
             joueur_a_supprimer = st.selectbox("Choisir le joueur à supprimer", noms_joueurs, key="del_p_list")
             if st.button("Supprimer ce joueur définitivement"):
@@ -193,9 +189,12 @@ elif menu == "Tableau de bord & Stats":
         st.info("👋 Bienvenue ! Commence par aller dans l'onglet **Gestion des Joueurs / Participants** pour configurer ton pool.")
     else:
         st.header("⚡ Saisie des statistiques de la soirée")
-        st.markdown("Chaque joueur n'apparaît qu'**une seule fois**. Modifie ses stats et clique sur enregistrer.")
+        st.markdown("Les joueurs sont triés **par ordre alphabétique** pour faciliter la saisie.")
 
-        df_saisie = pd.DataFrame(data["joueurs"])
+        # Trier les joueurs par nom (ordre alphabétique A-Z) pour le tableau de saisie
+        joueurs_tries_stats = sorted(data["joueurs"], key=lambda x: x["nom"].lower())
+        
+        df_saisie = pd.DataFrame(joueurs_tries_stats)
         colonnes_edition = ["nom", "position", "buts", "passes", "victoires", "blanchissages"]
         
         edited_df = st.data_editor(
@@ -207,7 +206,6 @@ elif menu == "Tableau de bord & Stats":
 
         if st.button("💾 Enregistrer les modifications des stats", type="primary"):
             for index, row in edited_df.iterrows():
-                # Retrouver le bon joueur dans la liste principale par son nom
                 nom_j = row["nom"]
                 for j in data["joueurs"]:
                     if j["nom"] == nom_j:
