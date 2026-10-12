@@ -31,17 +31,21 @@ def save_data(data):
 
 st.set_page_config(page_title="Pool de Hockey - Journalier", page_icon="🏒", layout="wide")
 
-# --- STYLE CSS POUR CENTRER TOUTES LES COLONNES (DONNÉES ET EN-TÊTES) ---
+# --- STYLE CSS AVANCÉ POUR CENTRER TOUT PARFAITEMENT ---
 st.markdown("""
     <style>
-    /* Centrer le texte et les nombres dans les cellules des tableaux et éditeurs */
-    .stDataFrame td, .stDataFrame th, div[data-baseweb="input"] input, [data-testid="stDataEditor"] div {
+    /* Centrer toutes les cellules, en-têtes et données de tous les tableaux Streamlit */
+    .stDataFrame td, .stDataFrame th, div[data-baseweb="input"] input, [data-testid="stDataEditor"] div, [data-testid="stTable"] td, [data-testid="stTable"] th {
         text-align: center !important;
+        justify-content: center !important;
     }
-    /* Centrer les en-têtes de colonnes des dataframes */
     th div {
         display: flex !important;
         justify-content: center !important;
+        text-align: center !important;
+    }
+    /* Forcer le centrage spécifique des cellules de dataframes et grilles */
+    div[data-testid="stDataFrame"] div[data-baseweb="block"] {
         text-align: center !important;
     }
     </style>
@@ -288,6 +292,7 @@ elif menu == "Tableau de bord & Stats":
             df_classement = df_classement.sort_values(by=critere_tri, ascending=is_ascending).reset_index(drop=True)
             df_classement.index = df_classement.index + 1
 
+            # Utilisation de colonnes resserrées pour forcer la largeur normale de Points Totaux
             st.dataframe(
                 df_classement, 
                 use_container_width=True,
@@ -297,7 +302,7 @@ elif menu == "Tableau de bord & Stats":
                     "Passes": st.column_config.NumberColumn("Passes", width="small", format="%d"),
                     "Win": st.column_config.NumberColumn("Win", width="small", format="%d"),
                     "Blanchissages": st.column_config.NumberColumn("Blanchissages", width="small", format="%d"),
-                    "Points Totaux": st.column_config.NumberColumn("Points Totaux", width="medium", format="%d")
+                    "Points Totaux": st.column_config.NumberColumn("Points Totaux", width="small", format="%d")
                 }
             )
         else:
