@@ -15,7 +15,6 @@ def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
-            # Sécurité pour s'assurer que tous les joueurs ont bien la structure attendue
             for j in data.get("joueurs", []):
                 if "participants" not in j:
                     j["participants"] = []
@@ -58,6 +57,7 @@ if st.sidebar.button("🔄 RESET Journalier (Mettre stats à 0)", type="primary"
 if menu == "Gestion des Joueurs / Participants":
     st.header("👥 Gestion des Participants et des Joueurs")
     
+    # Formulaire Ajout Participant
     with st.form("add_participant_form"):
         st.subheader("1. Ajouter un participant")
         nouveau_participant = st.text_input("Nom du participant")
@@ -73,8 +73,24 @@ if menu == "Gestion des Joueurs / Participants":
             else:
                 st.warning("Ce participant existe déjà.")
 
+    # Gestion Suppression Participant
+    if data["participants"]:
+        st.subheader("Supprimer un participant")
+        participant_a_supprimer = st.selectbox("Choisir un participant à supprimer", data["participants"], key="del_part_select")
+        if st.button("🗑️ Supprimer ce participant"):
+            # Retirer le participant de la liste principale
+            data["participants"].remove(participant_a_supprimer)
+            # Retirer ce participant de la liste des joueurs qui l'avaient choisi
+            for j in data["joueurs"]:
+                if participant_a_supprimer in j["participants"]:
+                    j["participants"].remove(participant_a_supprimer)
+            save_data(data)
+            st.success(f"Participant '{participant_a_supprimer}' supprimé avec succès !")
+            st.rerun()
+
     st.markdown("---")
 
+    # Formulaire Ajout Joueur
     with st.form("add_player_form"):
         st.subheader("2. Ajouter un joueur unique et l'associer aux participants")
         if data["participants"]:
@@ -119,7 +135,7 @@ if menu == "Gestion des Joueurs / Participants":
         else:
             st.info("Veuillez d'abord ajouter au moins un participant.")
 
-    # Affichage de la liste actuelle
+    # Affichage de la liste actuelle des joueurs
     st.subheader("📋 Liste des joueurs uniques enregistrés")
     if data["joueurs"]:
         df_show = pd.DataFrame([
@@ -131,8 +147,8 @@ if menu == "Gestion des Joueurs / Participants":
         ])
         st.dataframe(df_show, use_container_width=True)
         
-        joueur_a_supprimer = st.selectbox("Sélectionner un joueur à supprimer de la liste", [j["nom"] for j in data["joueurs"]])
-        if st.button("Supprimer ce joueur"):
+        joueur_a_supprimer = st.selectbox("Sélectionner un joueur à supprimer de la liste", [j["nom"] for j in data["joueurs"]], key="del_player_select")
+        if st.button("🗑️ Supprimer ce joueur"):
             data["joueurs"] = [j for j in data["joueurs"] if j["nom"] != joueur_a_supprimer]
             save_data(data)
             st.success("Joueur supprimé.")
