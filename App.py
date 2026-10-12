@@ -130,7 +130,7 @@ if menu == "Gestion des Joueurs / Participants":
 
     st.markdown("---")
 
-    # 3. Modifier rapidement les participants d'un joueur existant (Trié par ordre alphabétique)
+    # 3. Modifier rapidement les participants d'un joueur existant (Pré-coché par défaut)
     st.subheader("✏️ Modifier les participants d'un joueur existant")
     if data["joueurs"] and data["participants"]:
         joueurs_tries = sorted(data["joueurs"], key=lambda x: x["nom"].lower())
@@ -142,20 +142,21 @@ if menu == "Gestion des Joueurs / Participants":
         
         with st.form("edit_player_form"):
             st.markdown(f"**Modification pour : {joueur_obj['nom']} ({joueur_obj['position']})**")
-            st.markdown("Modifie les cases ci-dessous et clique sur mettre à jour :")
+            st.markdown("Les participants qui ont déjà choisi ce joueur sont **déjà cochés**. Ajoute ou retire des sélections selon tes besoins :")
             
             edit_checks = {}
             for p in data["participants"]:
-                deja_present = p in joueur_obj["participants"]
+                # Pré-coché automatiquement si le participant possède déjà ce joueur
+                deja_present = p in joueur_obj.get("participants", [])
                 edit_checks[p] = st.checkbox(p, value=deja_present, key=f"edit_chk_{p}")
                 
-            submit_edit = st.form_submit_button("Mettre à jour les participants de ce joueur")
+            submit_edit = st.form_submit_button("Mettre à jour les participants")
             
             if submit_edit:
                 nouveaux_participants = [p for p, selected in edit_checks.items() if selected]
                 joueur_obj["participants"] = nouveaux_participants
                 save_data(data)
-                st.success(f"Les participants pour {joueur_obj['nom']} ont été mis à jour !")
+                st.success(f"Les participants pour {joueur_obj['nom']} ont été mis à jour avec succès !")
                 st.rerun()
 
         st.markdown("---")
@@ -191,7 +192,6 @@ elif menu == "Tableau de bord & Stats":
         st.header("⚡ Saisie des statistiques de la soirée")
         st.markdown("Les joueurs sont triés **par ordre alphabétique** pour faciliter la saisie.")
 
-        # Trier les joueurs par nom (ordre alphabétique A-Z) pour le tableau de saisie
         joueurs_tries_stats = sorted(data["joueurs"], key=lambda x: x["nom"].lower())
         
         df_saisie = pd.DataFrame(joueurs_tries_stats)
