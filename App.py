@@ -14,11 +14,16 @@ POINTS_BLANCHISSAGE = 3
 def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+            # Sécurité pour s'assurer que tous les joueurs ont bien la structure attendue
+            for j in data.get("joueurs", []):
+                if "participants" not in j:
+                    j["participants"] = []
+            return data
     else:
         return {
             "participants": [],
-            "joueurs": []  # Structure unique par joueur
+            "joueurs": []
         }
 
 def save_data(data):
@@ -90,7 +95,6 @@ if menu == "Gestion des Joueurs / Participants":
                     joueur_existant = next((j for j in data["joueurs"] if j["nom"].lower() == nom_joueur.lower()), None)
                     
                     if joueur_existant:
-                        # Ajouter les nouveaux participants s'ils n'y sont pas déjà
                         for p in participants_selectionnes:
                             if p not in joueur_existant["participants"]:
                                 joueur_existant["participants"].append(p)
@@ -122,7 +126,7 @@ if menu == "Gestion des Joueurs / Participants":
             {
                 "Joueur": j["nom"],
                 "Position": j["position"],
-                "Participants l'ayant choisi": ", ".join(j["participants"])
+                "Participants l'ayant choisi": ", ".join(j.get("participants", []))
             } for j in data["joueurs"]
         ])
         st.dataframe(df_show, use_container_width=True)
@@ -172,7 +176,6 @@ elif menu == "Tableau de bord & Stats":
 
         classement_data = []
         for p in data["participants"]:
-            # Récupérer tous les joueurs qui ont ce participant dans leur liste
             joueurs_p = [j for j in data["joueurs"] if p in j.get("participants", [])]
             
             total_buts = sum(j.get("buts", 0) for j in joueurs_p)
