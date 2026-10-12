@@ -18,7 +18,7 @@ def load_data():
     else:
         return {
             "participants": [],
-            "joueurs": []  # Structure : { "nom": "...", "position": "...", "participants": [...], "buts": 0, "passes": 0, "victoires": 0, "blanchissages": 0 }
+            "joueurs": []  # Structure unique par joueur
         }
 
 def save_data(data):
@@ -78,9 +78,7 @@ if menu == "Gestion des Joueurs / Participants":
             
             st.markdown("**Coche les participants qui ont choisi ce joueur :**")
             participant_checks = {}
-            # Affichage en colonnes pour plus de propreté
-            cols = st.cols(4) if hasattr(st, "cols") else [st] * len(data["participants"])
-            for i, p in enumerate(data["participants"]):
+            for p in data["participants"]:
                 participant_checks[p] = st.checkbox(p, key=f"chk_{p}")
 
             submit_j = st.form_submit_button("Enregistrer ce joueur")
@@ -89,11 +87,10 @@ if menu == "Gestion des Joueurs / Participants":
                 if nom_joueur:
                     participants_selectionnes = [p for p, selected in participant_checks.items() if selected]
                     
-                    # Vérifier si le joueur existe déjà dans la liste
                     joueur_existant = next((j for j in data["joueurs"] if j["nom"].lower() == nom_joueur.lower()), None)
                     
                     if joueur_existant:
-                        # Mettre à jour les participants qui ont ce joueur sans écraser leurs stats
+                        # Ajouter les nouveaux participants s'ils n'y sont pas déjà
                         for p in participants_selectionnes:
                             if p not in joueur_existant["participants"]:
                                 joueur_existant["participants"].append(p)
@@ -145,8 +142,8 @@ elif menu == "Tableau de bord & Stats":
     if not data["joueurs"]:
         st.info("👋 Bienvenue ! Commence par aller dans l'onglet **Gestion des Joueurs / Participants** pour configurer ton pool.")
     else:
-        st.header("⚡ Saisie des statistiques de la soirée (1 seule fois par joueur)")
-        st.markdown("Modifie directement les statistiques dans le tableau ci-dessous. Le joueur n'est inscrit qu'une seule fois !")
+        st.header("⚡ Saisie des statistiques de la soirée")
+        st.markdown("Chaque joueur n'apparaît qu'**une seule fois**. Modifie ses stats et clique sur enregistrer.")
 
         df_saisie = pd.DataFrame(data["joueurs"])
         colonnes_edition = ["nom", "position", "buts", "passes", "victoires", "blanchissages"]
@@ -175,7 +172,7 @@ elif menu == "Tableau de bord & Stats":
 
         classement_data = []
         for p in data["participants"]:
-            # Trouver tous les joueurs de ce participant
+            # Récupérer tous les joueurs qui ont ce participant dans leur liste
             joueurs_p = [j for j in data["joueurs"] if p in j.get("participants", [])]
             
             total_buts = sum(j.get("buts", 0) for j in joueurs_p)
@@ -183,7 +180,6 @@ elif menu == "Tableau de bord & Stats":
             total_victoires = sum(j.get("victoires", 0) for j in joueurs_p)
             total_blanchissages = sum(j.get("blanchissages", 0) for j in joueurs_p)
             
-            # Calcul des points totaux pour ce participant
             total_pts = 0
             for j in joueurs_p:
                 if j["position"] == "Gardien":
