@@ -11,16 +11,14 @@ POINTS_PASSE = 1
 POINTS_VICTOIRE = 2
 POINTS_BLANCHISSAGE = 3
 
-# Initialisation des données par défaut si le fichier n'existe pas
 def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     else:
-        # Structure de base vide
         return {
             "participants": [],
-            "joueurs": []  # Liste de dictionnaires : {nom, participant, position, buts, passes, victoires, blanchissages}
+            "joueurs": []  # Structure : { "nom": "...", "position": "...", "participants": [...], "buts": 0, "passes": 0, "victoires": 0, "blanchissages": 0 }
         }
 
 def save_data(data):
@@ -34,9 +32,8 @@ data = load_data()
 st.title("🏒 Pool de Hockey - Suivi Journalier")
 st.markdown("Gère tes matchs du soir, consulte le classement et fais un **RESET** quotidien pour repartir à zéro le lendemain.")
 
-# --- BARRE LATÉRALE : CONFIGURATION ET RESET ---
+# --- BARRE LATÉRALE ---
 st.sidebar.header("⚙️ Configuration & Actions")
-
 menu = st.sidebar.radio("Navigation", ["Tableau de bord & Stats", "Gestion des Joueurs / Participants"])
 
 st.sidebar.markdown("---")
@@ -52,12 +49,12 @@ if st.sidebar.button("🔄 RESET Journalier (Mettre stats à 0)", type="primary"
     st.sidebar.success("Toutes les statistiques du jour ont été remises à zéro !")
     st.rerun()
 
-# --- SECTION 1 : GESTION DES JOUEURS / PARTICIPANTS ---
+# --- SECTION 1 : GESTION ---
 if menu == "Gestion des Joueurs / Participants":
-    st.header("👥 Gestion des Participants et de leurs Joueurs")
+    st.header("👥 Gestion des Participants et des Joueurs")
     
     with st.form("add_participant_form"):
-        st.subheader("Ajouter un participant")
+        st.subheader("1. Ajouter un participant")
         nouveau_participant = st.text_input("Nom du participant")
         submit_p = st.form_submit_button("Ajouter le participant")
         if submit_p:
@@ -74,30 +71,47 @@ if menu == "Gestion des Joueurs / Participants":
     st.markdown("---")
 
     with st.form("add_player_form"):
-        st.subheader("Ajouter un joueur à un participant")
+        st.subheader("2. Ajouter un joueur unique et l'associer aux participants")
         if data["participants"]:
-            sel_participant = st.selectbox("Participant", data["participants"])
-            nom_joueur = st.text_input("Nom du joueur")
+            nom_joueur = st.text_input("Nom du joueur (ex: Cale Makar)")
             position = st.selectbox("Position", ["Attaquant", "Défenseur", "Gardien"])
-            submit_j = st.form_submit_button("Ajouter le joueur")
+            
+            st.markdown("**Coche les participants qui ont choisi ce joueur :**")
+            participant_checks = {}
+            # Affichage en colonnes pour plus de propreté
+            cols = st.cols(4) if hasattr(st, "cols") else [st] * len(data["participants"])
+            for i, p in enumerate(data["participants"]):
+                participant_checks[p] = st.checkbox(p, key=f"chk_{p}")
+
+            submit_j = st.form_submit_button("Enregistrer ce joueur")
             
             if submit_j:
                 if nom_joueur:
-                    # Vérifier si le joueur existe déjà
-                    if any(j["nom"].lower() == nom_joueur.lower() for j in data["joueurs"]):
-                        st.error("Ce joueur existe déjà dans le pool.")
+                    participants_selectionnes = [p for p, selected in participant_checks.items() if selected]
+                    
+                    # Vérifier si le joueur existe déjà dans la liste
+                    joueur_existant = next((j for j in data["joueurs"] if j["nom"].lower() == nom_joueur.lower()), None)
+                    
+                    if joueur_existant:
+                        # Mettre à jour les participants qui ont ce joueur sans écraser leurs stats
+                        for p in participants_selectionnes:
+                            if p not in joueur_existant["participants"]:
+                                joueur_existant["participants"].append(p)
+                        save_data(data)
+                        st.success(f"Joueur {nom_joueur} mis à jour avec les nouveaux participants !")
+                        st.rerun()
                     else:
                         data["joueurs"].append({
                             "nom": nom_joueur,
-                            "participant": sel_participant,
                             "position": position,
+                            "participants": participants_selectionnes,
                             "buts": 0,
                             "passes": 0,
                             "victoires": 0,
                             "blanchissages": 0
                         })
                         save_data(data)
-                        st.success(f"Joueur {nom_joueur} ajouté à {sel_participant} !")
+                        st.success(f"Joueur {nom_joueur} ajouté avec succès !")
                         st.rerun()
                 else:
                     st.error("Le nom du joueur est requis.")
@@ -105,13 +119,18 @@ if menu == "Gestion des Joueurs / Participants":
             st.info("Veuillez d'abord ajouter au moins un participant.")
 
     # Affichage de la liste actuelle
-    st.subheader("📋 Liste actuelle des joueurs enregistrés")
+    st.subheader("📋 Liste des joueurs uniques enregistrés")
     if data["joueurs"]:
-        df_joueurs = pd.DataFrame(data["joueurs"])
-        st.dataframe(df_joueurs[["nom", "participant", "position"]], use_container_width=True)
+        df_show = pd.DataFrame([
+            {
+                "Joueur": j["nom"],
+                "Position": j["position"],
+                "Participants l'ayant choisi": ", ".join(j["participants"])
+            } for j in data["joueurs"]
+        ])
+        st.dataframe(df_show, use_container_width=True)
         
-        # Option pour supprimer un joueur
-        joueur_a_supprimer = st.selectbox("Sélectionner un joueur à supprimer", [j["nom"] for j in data["joueurs"]])
+        joueur_a_supprimer = st.selectbox("Sélectionner un joueur à supprimer de la liste", [j["nom"] for j in data["joueurs"]])
         if st.button("Supprimer ce joueur"):
             data["joueurs"] = [j for j in data["joueurs"] if j["nom"] != joueur_a_supprimer]
             save_data(data)
@@ -120,29 +139,17 @@ if menu == "Gestion des Joueurs / Participants":
     else:
         st.info("Aucun joueur enregistré pour le moment.")
 
-# --- SECTION 2 : TABLEAU DE BORD & STATS (JOURNALIER) ---
+# --- SECTION 2 : TABLEAU DE BORD & STATS ---
 elif menu == "Tableau de bord & Stats":
     
     if not data["joueurs"]:
-        st.info("👋 Bienvenue ! Commence par aller dans l'onglet **Gestion des Joueurs / Participants** pour configurer ton pool (tes 16 participants et leurs joueurs).")
+        st.info("👋 Bienvenue ! Commence par aller dans l'onglet **Gestion des Joueurs / Participants** pour configurer ton pool.")
     else:
-        # Calcul des points pour chaque joueur
-        for j in data["joueurs"]:
-            if j["position"] == "Gardien":
-                j["points"] = (j.get("victoires", 0) * POINTS_VICTOIRE) + (j.get("blanchissages", 0) * POINTS_BLANCHISSAGE) + (j.get("buts", 0) * POINTS_BUT) + (j.get("passes", 0) * POINTS_PASSE)
-            else:
-                j["points"] = (j.get("buts", 0) * POINTS_BUT) + (j.get("passes", 0) * POINTS_PASSE)
+        st.header("⚡ Saisie des statistiques de la soirée (1 seule fois par joueur)")
+        st.markdown("Modifie directement les statistiques dans le tableau ci-dessous. Le joueur n'est inscrit qu'une seule fois !")
 
-        st.header("⚡ Saisie des statistiques de la soirée")
-        st.markdown("Modifie directement les statistiques dans le tableau ci-dessous ou utilise le formulaire rapide.")
-
-        # Édition interactive via un tableau modifiable (Data Editor)
         df_saisie = pd.DataFrame(data["joueurs"])
-        
-        # Colonnes affichées pour la saisie
-        colonnes_edition = ["nom", "participant", "position", "buts", "passes", "victoires", "blanchissages"]
-        
-        st.markdown("💡 *Astuce : Double-clique sur les cellules de buts, passes, victoires ou blanchissages pour modifier les chiffres du jour.*")
+        colonnes_edition = ["nom", "position", "buts", "passes", "victoires", "blanchissages"]
         
         edited_df = st.data_editor(
             df_saisie[colonnes_edition],
@@ -151,9 +158,7 @@ elif menu == "Tableau de bord & Stats":
             key="grid_stats"
         )
 
-        # Bouton pour sauvegarder les modifications du tableau
         if st.button("💾 Enregistrer les modifications des stats", type="primary"):
-            # Mettre à jour la structure de données avec les modifications du tableau
             for index, row in edited_df.iterrows():
                 data["joueurs"][index]["buts"] = int(row["buts"])
                 data["joueurs"][index]["passes"] = int(row["passes"])
@@ -168,29 +173,36 @@ elif menu == "Tableau de bord & Stats":
         # --- CLASSEMENT DES PARTICIPANTS ---
         st.header("🏆 Classement Général des Participants")
 
-        # Recalculer les totaux par participant
         classement_data = []
         for p in data["participants"]:
-            joueurs_p = [j for j in data["joueurs"] if j["participant"] == p]
+            # Trouver tous les joueurs de ce participant
+            joueurs_p = [j for j in data["joueurs"] if p in j.get("participants", [])]
+            
             total_buts = sum(j.get("buts", 0) for j in joueurs_p)
             total_passes = sum(j.get("passes", 0) for j in joueurs_p)
             total_victoires = sum(j.get("victoires", 0) for j in joueurs_p)
             total_blanchissages = sum(j.get("blanchissages", 0) for j in joueurs_p)
-            total_pts = sum(j.get("points", 0) for j in joueurs_p)
             
+            # Calcul des points totaux pour ce participant
+            total_pts = 0
+            for j in joueurs_p:
+                if j["position"] == "Gardien":
+                    total_pts += (j.get("victoires", 0) * POINTS_VICTOIRE) + (j.get("blanchissages", 0) * POINTS_BLANCHISSAGE) + (j.get("buts", 0) * POINTS_BUT) + (j.get("passes", 0) * POINTS_PASSE)
+                else:
+                    total_pts += (j.get("buts", 0) * POINTS_BUT) + (j.get("passes", 0) * POINTS_PASSE)
+
             classement_data.append({
                 "Participant": p,
                 "Buts": total_buts,
                 "Passes": total_passes,
                 "Victoires (Gardiens)": total_victoires,
                 "Blanchissages": total_blanchissages,
-                "Points Totaux": total_pts  # Déplacé complètement à droite
+                "Points Totaux": total_pts
             })
 
         df_classement = pd.DataFrame(classement_data)
 
         if not df_classement.empty:
-            # Tri dynamique
             col_tri, ascending_order = st.columns(2)
             with col_tri:
                 critere_tri = st.selectbox("Trier le classement par :", ["Points Totaux", "Buts", "Passes", "Victoires (Gardiens)", "Blanchissages", "Participant"], index=0)
@@ -199,7 +211,7 @@ elif menu == "Tableau de bord & Stats":
                 is_ascending = True if ordre == "Croissant" else False
 
             df_classement = df_classement.sort_values(by=critere_tri, ascending=is_ascending).reset_index(drop=True)
-            df_classement.index = df_classement.index + 1  # Pour commencer le classement à 1
+            df_classement.index = df_classement.index + 1
 
             st.dataframe(df_classement, use_container_width=True)
         else:
