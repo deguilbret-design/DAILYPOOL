@@ -281,17 +281,22 @@ elif menu == "Alignements par Participant":
             j for j in data["joueurs"] if participant_selectionne in j.get("participants", [])
         ]
         
-        # Trier par ordre alphabétique du nom du joueur
-        joueurs_du_participant = sorted(joueurs_du_participant, key=lambda x: x["nom"].lower())
+        # Tri personnalisé : Attaquants d'abord, puis Défenseurs, puis Gardiens (et ordre alphabétique du nom à l'intérieur)
+        ordre_positions = {"Attaquant": 1, "Défenseur": 2, "Gardien": 3}
+        
+        joueurs_du_participant = sorted(
+            joueurs_du_participant, 
+            key=lambda x: (ordre_positions.get(x["position"], 4), x["nom"].lower())
+        )
         
         if joueurs_du_participant:
             st.markdown(f"**Équipe de {participant_selectionne}** ({len(joueurs_du_participant)} joueur(s) enregistré(s)) :")
             
             df_part_show = pd.DataFrame([
                 {
-                    "Joueur": j["nom"],
                     "Position": j["position"],
-                    "Buts (saison/jour)": j.get("buts", 0),
+                    "Joueur": j["nom"],
+                    "Buts": j.get("buts", 0),
                     "Passes": j.get("passes", 0),
                     "Victoires": j.get("victoires", 0),
                     "Blanchissages": j.get("blanchissages", 0)
