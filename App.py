@@ -182,6 +182,7 @@ if menu == "Gestion des Joueurs / Participants":
                 "Participants l'ayant choisi": ", ".join(j.get("participants", []))
             } for j in sorted(data["joueurs"], key=lambda x: x["nom"].lower())
         ])
+        df_show.index = df_show.index + 1
         st.dataframe(df_show, use_container_width=True)
     else:
         st.info("Aucun joueur enregistré pour le moment.")
@@ -302,6 +303,8 @@ elif menu == "Alignements par Participant":
                     "Blanchissages": j.get("blanchissages", 0)
                 } for j in joueurs_du_participant
             ])
+            # Numérotation de 1 à 15 (ou plus)
+            df_part_show.index = df_part_show.index + 1
             st.dataframe(df_part_show, use_container_width=True)
         else:
             st.info(f"Aucun joueur n'a encore été associé à {participant_selectionne}.")
