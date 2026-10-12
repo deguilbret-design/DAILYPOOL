@@ -38,7 +38,11 @@ st.markdown("Gère tes matchs du soir, consulte le classement et fais un **RESET
 
 # --- BARRE LATÉRALE ---
 st.sidebar.header("⚙️ Configuration & Actions")
-menu = st.sidebar.radio("Navigation", ["Tableau de bord & Stats", "Gestion des Joueurs / Participants"])
+menu = st.sidebar.radio("Navigation", [
+    "Tableau de bord & Stats", 
+    "Gestion des Joueurs / Participants", 
+    "Alignements par Participant"
+])
 
 st.sidebar.markdown("---")
 
@@ -146,7 +150,6 @@ if menu == "Gestion des Joueurs / Participants":
             
             edit_checks = {}
             for p in data["participants"]:
-                # Pré-coché automatiquement si le participant possède déjà ce joueur
                 deja_present = p in joueur_obj.get("participants", [])
                 edit_checks[p] = st.checkbox(p, value=deja_present, key=f"edit_chk_{p}")
                 
@@ -263,3 +266,37 @@ elif menu == "Tableau de bord & Stats":
             st.dataframe(df_classement, use_container_width=True)
         else:
             st.info("Aucun participant dans le classement pour l'instant.")
+
+# --- SECTION 3 : ALIGNEMENTS PAR PARTICIPANT ---
+elif menu == "Alignements par Participant":
+    st.header("📋 Vérification des alignements par participant")
+    
+    if not data["participants"]:
+        st.info("Aucun participant enregistré.")
+    else:
+        participant_selectionne = st.selectbox("Sélectionne un participant pour voir son équipe", sorted(data["participants"]))
+        
+        # Filtrer les joueurs de ce participant
+        joueurs_du_participant = [
+            j for j in data["joueurs"] if participant_selectionne in j.get("participants", [])
+        ]
+        
+        # Trier par ordre alphabétique du nom du joueur
+        joueurs_du_participant = sorted(joueurs_du_participant, key=lambda x: x["nom"].lower())
+        
+        if joueurs_du_participant:
+            st.markdown(f"**Équipe de {participant_selectionne}** ({len(joueurs_du_participant)} joueur(s) enregistré(s)) :")
+            
+            df_part_show = pd.DataFrame([
+                {
+                    "Joueur": j["nom"],
+                    "Position": j["position"],
+                    "Buts (saison/jour)": j.get("buts", 0),
+                    "Passes": j.get("passes", 0),
+                    "Victoires": j.get("victoires", 0),
+                    "Blanchissages": j.get("blanchissages", 0)
+                } for j in joueurs_du_participant
+            ])
+            st.dataframe(df_part_show, use_container_width=True)
+        else:
+            st.info(f"Aucun joueur n'a encore été associé à {participant_selectionne}.")
